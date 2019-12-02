@@ -1,39 +1,45 @@
 #include "ESP8266WiFi.h"
-#include <Adafruit_Neopixel.h>
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_NeoPixel.h>
 
 #define PIN D5
+#define LEDNR 24
 
-Adafruit_SSD1306 display(-1);
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, PIN);
+int sigStr = 0;
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEDNR, PIN);
 
 void setup() {
+  // put your setup code here, to run once:
   Serial.begin(115200);
   strip.begin();
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,28);
-  display.clearDisplay();
   strip.setBrightness(128);
   strip.show();
 }
- 
+
 void loop() {
+  // put your main code here, to run repeatedly:
+  for(int i = 0; i<LEDNR; i++){
+      strip.setPixelColor(i, 0, 0, 0);
+  }
+  strip.show();
   int numberOfNetworks = WiFi.scanNetworks();
   for(int i =0; i<numberOfNetworks; i++){
-      display.clearDisplay();
-      display.print("Network name: ");
-      display.println(WiFi.SSID(i));
-      display.display();
-      //FIX RSSI MAPPING TO LED RING VALUES!
+      Serial.print("Network name: ");
+      Serial.println(WiFi.SSID(i));
       Serial.print("Signal strength: ");
       Serial.println(WiFi.RSSI(i));
+      sigStr = map(WiFi.RSSI(i), -90, -20, 1, 24);
       Serial.println("-----------------------");
-      delay(8000);
+      for(int i = 0; i<sigStr; i++){
+        strip.setPixelColor(i, 0, 255, 0);
+      }
+      strip.show();
+      delay(4000);
+      for(int i = 0; i<LEDNR; i++){
+        strip.setPixelColor(i, 0, 0, 0);
+      }
+      strip.show();
   }  
   delay(2000);
+
 }
