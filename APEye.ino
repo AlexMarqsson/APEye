@@ -31,7 +31,9 @@ void loop() {
       sigStr = map(WiFi.RSSI(i), -90, -20, 1, 24);
       Serial.println("-----------------------");
       for(int i = 0; i<sigStr; i++){
-        strip.setPixelColor(i, 0, 255, 0);
+        if(sigStr <= 5){strip.setPixelColor(i, 255, 0, 0);}
+        else if(sigStr>=6 && sigStr<12){strip.setPixelColor(i, 255, 255, 0);}
+        else{strip.setPixelColor(i, 0, 255, 0);}
       }
       strip.show();
       delay(4000);
