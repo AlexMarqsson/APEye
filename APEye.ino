@@ -18,9 +18,11 @@ enum stateEnum {READ, FETCH, CYCLE};
 #define CYCLEPIN        D7
 
 void stateMachine();
+void nullFound();
 void clearAll();
 int scan();
 void output();
+void booted();
 
 uint8_t state = READ;
 int sigStr = 0;
@@ -34,11 +36,19 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  
+  // Setting pin mode
   pinMode(FETCHPIN, INPUT);
   pinMode(CYCLEPIN, INPUT);
+
+  // Initiate NeoPixel
   strip.begin();
   strip.setBrightness(128);
   strip.show();
+  
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
@@ -47,7 +57,10 @@ void setup() {
   delay(2000); // Pause for 2 seconds
   display.setTextSize(2);
   display.setTextColor(WHITE);
+
+  // Clear OLED and let user know that boot sequence is finished
   clearAll();
+  booted();
 }
 
 void loop() {
@@ -59,6 +72,7 @@ void loop() {
 void stateMachine(){
   switch(state){
     case READ:
+      /*Default state which checks for actions*/
       if(digitalRead(FETCHPIN) == HIGH){state = FETCH; break;}
       if(digitalRead(CYCLEPIN) == HIGH){state = CYCLE; break;}
       break;
@@ -66,7 +80,6 @@ void stateMachine(){
     case FETCH:
       delay(200);
       /*Code for Fetching AP list*/
-      Serial.println("Fetching..");
       clearAll();
       nrOfAps = scan();
       idx=-1;
@@ -76,8 +89,10 @@ void stateMachine(){
     case CYCLE:
       delay(500);
       /*Code for Cycling through AP list*/
-      Serial.println("Cycling..");
-      if(nrOfAps == 0){state = READ; break;}
+      if(nrOfAps == 0){state = READ;
+        nullFound(); 
+        break;
+      }
       if((idx) >= (nrOfAps-1)){idx = -2;}
       idx++;
       output();
@@ -86,6 +101,16 @@ void stateMachine(){
   }
 }
 
+// Function handeling the case of scan() returning 0
+void nullFound(){
+  display.println("Nothing");
+  display.println("Found..");
+  display.display();
+  delay(2 000);
+  clearAll();
+}
+
+// Function clearing NeoPixel and OLED
 void clearAll(){
   display.clearDisplay();
   display.setCursor(0,0);
@@ -96,22 +121,26 @@ void clearAll(){
   strip.show();
 }
 
+// Function returning number of networks found while scanning
 int scan(){
   clearAll();
-  display.println("Fetching Data");
+  WiFi.scanDelete();
+  display.println("Fetching"); 
+  display.println("Data");
   display.display();
   return WiFi.scanNetworks();
 }
 
+// Function outputting data using NeoPixel and OLED
 void output(){
   clearAll();
   if(idx+1 != 0){
     display.print("AP: ");
     display.print(idx+1);
-    display.print(" /");
+    display.print("/");
     display.println(nrOfAps);
     display.print(WiFi.SSID(idx));
-    sigStr = map(WiFi.RSSI(idx), -90, -20, 1, 24);
+    sigStr = map(WiFi.RSSI(idx), -100, 0, 1, 24);
     Serial.println(WiFi.SSID(idx));
     Serial.print(sigStr);
     for(int i = 0; i<sigStr; i++){
@@ -122,4 +151,17 @@ void output(){
   }  
     display.display();
     strip.show();
+}
+
+// Function to indicate that boot is finished
+void booted(){
+  for(int i = 0; i<3; i++){
+    for(int i = 0; i<LEDNR; i++){
+        strip.setPixelColor(i, 0, 0, 255);
+    }
+    strip.show();
+    delay(500);
+    clearAll();
+    delay(200);
+  }
 }
