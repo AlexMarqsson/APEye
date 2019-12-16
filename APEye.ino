@@ -1,5 +1,4 @@
 //OLED
-#include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -106,7 +105,7 @@ void nullFound(){
   display.println("Nothing");
   display.println("Found..");
   display.display();
-  delay(2 000);
+  delay(2000);
   clearAll();
 }
 
